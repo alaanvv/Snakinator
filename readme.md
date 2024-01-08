@@ -6,5 +6,7 @@
   Not limited by Nokia screens anymore  
     
   Move across the plane: **W, A, S, D**  
-  Change plane: **E**
+  Change plane: **E**  
+
+  [Itch.io page](https://alaanvv.itch.io/snakinator)
 </div>
