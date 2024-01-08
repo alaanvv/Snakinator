@@ -10,3 +10,10 @@
 
   [Itch.io page](https://alaanvv.itch.io/snakinator)
 </div>
+
+---
+
+# Compile
+
+- **Require**: [GLAD](https://glad.dav1d.de/) and [OpenGL](https://www.opengl.org/)
+- `gcc script.c inc/glad.c -o script -lglfw -lm; ./script `
