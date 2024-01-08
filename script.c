@@ -278,7 +278,8 @@ u8 game_loop() {
   // Check for kobra-snake collision
   for (u8 i = 0; i < snake.size; i++)
     if (CMP_VEC3(snake.body[i], kobra.body[kobra.size])) { kobra.alive = 0; check_endgame(); }
-  if (CMP_VEC3(snake.body[snake.size], kobra.body[kobra.size])) {
+
+  if (CMP_VEC3(snake.body[snake.size], kobra.body[kobra.size]) && kobra.alive && snake.alive) {
     snake.alive = 0;
     kobra.alive = 0;
     check_endgame();
