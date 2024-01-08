@@ -1,6 +1,7 @@
 #include "canvas.h"
 #include <time.h>
 
+#define MAX(x, y) (x > y ? x : y)
 #define RAND(min, max) (rand() % (max - min) + min)
 #define UNI(shader, name) (glGetUniformLocation(shader, name))
 #define CMP_VEC3(v1, v2) (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2])
@@ -13,6 +14,7 @@
 #define C_PLATAFORM  { 0.98, 0.93, 0.35 }
 #define C_APPLE      { 1.00, 0.00, 0.30 }
 #define C_SNAKE      { 0.49, 0.14, 0.32 }
+#define C_KOBRA      { 0.19, 0.14, 0.32 }
 
 typedef uint8_t  u8;
 typedef uint32_t u32;
@@ -36,6 +38,7 @@ typedef struct {
   u8 dir;
   u8 last_dir;
   u8 last_plane_dir;
+  u8 alive;
 } Snake;
 
 void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods);
@@ -54,9 +57,11 @@ const f32 c_background[3] = C_BACKGROUND;
 const f32 c_plataform[3] = C_PLATAFORM;
 const f32 c_apple[3] = C_APPLE;
 const f32 c_snake[3] = C_SNAKE;
+const f32 c_kobra[3] = C_KOBRA;
 
 u8 apple[3] = { TILES / 4, 0, TILES / 4 };
-Snake snake = { { TILES / 2, 0, TILES / 2 }, 1, LEFT, LEFT, LEFT };
+Snake snake = { { TILES / 2, 0, TILES / 2 }, 1, LEFT, LEFT, LEFT, 1 };
+Snake kobra = { { TILES / 2, 0, TILES / 2 + 2 }, 1, LEFT, LEFT, LEFT, 1 };
 
 f32 last_tick;
 f32 tick_wait = 0.3;
@@ -119,7 +124,8 @@ i8 main() {
 
     // Draw snake
     for (u8 i = 0; i < snake.size; i++) {
-      glUniform3fv(UNI(shader_program, "COLOR"), 1, c_snake);
+      if (snake.alive || !kobra.alive) glUniform3fv(UNI(shader_program, "COLOR"), 1, c_snake);
+      else glUniform3fv(UNI(shader_program, "COLOR"), 1, c_plataform);
       glm_mat4_identity(model);
       glm_translate(model, (vec3) { snake.body[i][0], snake.body[i][1] + 1, snake.body[i][2] });
       glUniformMatrix4fv(UNI(shader_program, "MODEL"), 1, GL_FALSE, (const f32*) { model[0] });
@@ -130,6 +136,26 @@ i8 main() {
 
         glm_mat4_identity(model);
         glm_translate(model, (vec3) { snake.body[i][0], 1.01, snake.body[i][2] });
+        glUniformMatrix4fv(UNI(shader_program, "MODEL"), 1, GL_FALSE, (const f32*) { model[0] });
+
+        glDrawArrays(GL_TRIANGLES, 24, 6);
+      }
+    }
+
+    // Draw kobra
+    for (u8 i = 0; i < kobra.size; i++) {
+      if (kobra.alive || !snake.alive) glUniform3fv(UNI(shader_program, "COLOR"), 1, c_kobra);
+      else glUniform3fv(UNI(shader_program, "COLOR"), 1, c_plataform);
+      glm_mat4_identity(model);
+      glm_translate(model, (vec3) { kobra.body[i][0], kobra.body[i][1] + 1, kobra.body[i][2] });
+      glUniformMatrix4fv(UNI(shader_program, "MODEL"), 1, GL_FALSE, (const f32*) { model[0] });
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      if (kobra.body[i][1] == 1) {
+        glUniform3fv(UNI(shader_program, "COLOR"), 1, c_plataform);
+
+        glm_mat4_identity(model);
+        glm_translate(model, (vec3) { kobra.body[i][0], 1.01, kobra.body[i][2] });
         glUniformMatrix4fv(UNI(shader_program, "MODEL"), 1, GL_FALSE, (const f32*) { model[0] });
 
         glDrawArrays(GL_TRIANGLES, 24, 6);
@@ -163,6 +189,15 @@ void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mod
                        if      (snake.body[snake.size - 1][1] == 0 && (snake.size == 1 || snake.last_dir != BACK))  snake.dir = FRONT; 
                        else if (snake.body[snake.size - 1][1] == 1 && (snake.size == 1 || snake.last_dir != FRONT)) snake.dir = BACK; 
                        break;
+
+    case GLFW_KEY_I: if (kobra.last_dir != DOWN)  kobra.dir = UP; break;
+    case GLFW_KEY_K: if (kobra.last_dir != UP)    kobra.dir = DOWN; break;
+    case GLFW_KEY_L: if (kobra.last_dir != LEFT)  kobra.dir = RIGHT; break;
+    case GLFW_KEY_J: if (kobra.last_dir != RIGHT) kobra.dir = LEFT; break;
+    case GLFW_KEY_O:
+                       if      (kobra.body[snake.size - 1][1] == 0 && (kobra.size == 1 || kobra.last_dir != BACK))  kobra.dir = FRONT; 
+                       else if (kobra.body[snake.size - 1][1] == 1 && (kobra.size == 1 || kobra.last_dir != FRONT)) kobra.dir = BACK; 
+                       break;
   }
 }
 
@@ -175,15 +210,20 @@ void cursor_callback(GLFWwindow* window, f64 x, f64 y) {
 
 u8 game_loop() {
   if (game_end) {
-    if (snake.size == 0 && tick_wait == 2) return 0;
-    else if (snake.size == 0) tick_wait = 2;
-    else snake.size--;
+    if (snake.size == 0 && kobra.size == 0 && tick_wait == 2) return 0;
+    else if (snake.size == 0 && kobra.size == 0) tick_wait = 2;
+    else {
+      snake.size = MAX(snake.size - 1, 0);
+      kobra.size = MAX(kobra.size - 1, 0);
+    }
     return 1;
   }
 
   // If going to hit a border on y-axis, get back to a plane direction
   if (snake.dir == FRONT && snake.body[snake.size - 1][1] == 1 || snake.dir == BACK && snake.body[snake.size - 1][1] == 0) 
     snake.dir = snake.last_plane_dir;
+  if (kobra.dir == FRONT && kobra.body[kobra.size - 1][1] == 1 || kobra.dir == BACK && kobra.body[kobra.size - 1][1] == 0) 
+    kobra.dir = kobra.last_plane_dir;
 
   // Create the new head outbound before shifting the snake
   snake.body[snake.size][0] = snake.body[snake.size - 1][0];
@@ -198,26 +238,59 @@ u8 game_loop() {
     case BACK:  snake.body[snake.size][1]--; break;
   }
 
+  kobra.body[kobra.size][0] = kobra.body[kobra.size - 1][0];
+  kobra.body[kobra.size][1] = kobra.body[kobra.size - 1][1];
+  kobra.body[kobra.size][2] = kobra.body[kobra.size - 1][2];
+  switch (kobra.dir) {
+    case UP:    kobra.body[kobra.size][2]++; break;
+    case DOWN:  kobra.body[kobra.size][2]--; break;
+    case RIGHT: kobra.body[kobra.size][0]--; break;
+    case LEFT:  kobra.body[kobra.size][0]++; break;
+    case FRONT: kobra.body[kobra.size][1]++; break;
+    case BACK:  kobra.body[kobra.size][1]--; break;
+  }
+
   // Teleport through walls
   if (snake.body[snake.size][0] >= TILES) snake.body[snake.size][0] = 0;
   if (snake.body[snake.size][2] >= TILES) snake.body[snake.size][2] = 0;
   if (snake.body[snake.size][0] <  0)     snake.body[snake.size][0] = TILES - 1;
   if (snake.body[snake.size][2] <  0)     snake.body[snake.size][2] = TILES - 1;
 
-  // Check for snake collision
+  if (kobra.body[kobra.size][0] >= TILES) kobra.body[kobra.size][0] = 0;
+  if (kobra.body[kobra.size][2] >= TILES) kobra.body[kobra.size][2] = 0;
+  if (kobra.body[kobra.size][0] <  0)     kobra.body[kobra.size][0] = TILES - 1;
+  if (kobra.body[kobra.size][2] <  0)     kobra.body[kobra.size][2] = TILES - 1;
+
+  void check_endgame() {
+    if (snake.alive || kobra.alive) return;
+    game_end = 1;
+    tick_wait = 0.1;
+  }
+  // Check for snake-snake collision
   for (u8 i = 1; i < snake.size; i++)
-    if (CMP_VEC3(snake.body[i], snake.body[snake.size])) {
-      game_end = 1;
-      tick_wait = 0.1;
-    }
+    if (CMP_VEC3(snake.body[i], snake.body[snake.size])) { snake.alive = 0; check_endgame(); }
+  // Check for snake-kobra collision
+  for (u8 i = 0; i < kobra.size; i++)
+    if (CMP_VEC3(kobra.body[i], snake.body[snake.size])) { snake.alive = 0; check_endgame(); }
+  // Check for kobra-kobra collision
+  for (u8 i = 1; i < kobra.size; i++)
+    if (CMP_VEC3(kobra.body[i], kobra.body[kobra.size])) { kobra.alive = 0; check_endgame(); }
+  // Check for kobra-snake collision
+  for (u8 i = 0; i < snake.size; i++)
+    if (CMP_VEC3(snake.body[i], kobra.body[kobra.size])) { kobra.alive = 0; check_endgame(); }
+  if (CMP_VEC3(snake.body[snake.size], kobra.body[kobra.size])) {
+    snake.alive = 0;
+    kobra.alive = 0;
+    check_endgame();
+  }
 
   // Check for apple collision
-  if (CMP_VEC3(snake.body[snake.size], apple)) {
-    u8 apple_free() {
-      for (u8 i = 0; i < snake.size; i++)
-        if (CMP_VEC3(snake.body[i], apple)) return 0;
-    }
+  u8 apple_free() {
+      for (u8 i = 0; i < snake.size; i++) if (CMP_VEC3(snake.body[i], apple)) return 0;
+      for (u8 i = 0; i < kobra.size; i++) if (CMP_VEC3(kobra.body[i], apple)) return 0;
+  }
 
+  if (CMP_VEC3(snake.body[snake.size], apple)) {
     do {
       apple[0] = RAND(0, TILES);
       apple[1] = RAND(0, 2);
@@ -227,7 +300,7 @@ u8 game_loop() {
     snake.size++;
   }
   // If didn't eat apple, remove last block
-  else {
+  else if (snake.alive) {
     for (u8 i = 1; i < snake.size + 1; i++) {
       snake.body[i - 1][0] = snake.body[i][0];
       snake.body[i - 1][1] = snake.body[i][1];
@@ -235,7 +308,27 @@ u8 game_loop() {
     }
   }
 
+  if (CMP_VEC3(kobra.body[kobra.size], apple)) {
+    do {
+      apple[0] = RAND(0, TILES);
+      apple[1] = RAND(0, 2);
+      apple[2] = RAND(0, TILES);
+    } while (!apple_free());
+
+    kobra.size++;
+  }
+  // If didn't eat apple, remove last block
+  else if (kobra.alive) {
+    for (u8 i = 1; i < kobra.size + 1; i++) {
+      kobra.body[i - 1][0] = kobra.body[i][0];
+      kobra.body[i - 1][1] = kobra.body[i][1];
+      kobra.body[i - 1][2] = kobra.body[i][2];
+    }
+  }
+
   snake.last_dir = snake.dir;
+  kobra.last_dir = kobra.dir;
   if (snake.dir != FRONT && snake.dir != BACK) snake.last_plane_dir = snake.dir;
+  if (kobra.dir != FRONT && kobra.dir != BACK) kobra.last_plane_dir = kobra.dir;
   return 1;
 }
