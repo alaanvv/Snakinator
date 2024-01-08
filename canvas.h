@@ -67,31 +67,20 @@ u32 canvas_create_VAO() {
   return VAO;
 }
 
-u32 shader_create_program(char vertex_path[], char fragment_path[]) {
-  u32 create_shader(GLenum type, char path[], char name[]) {
-    FILE* file = fopen(path, "r");
-    fseek(file, 0, SEEK_END);
-    int size = ftell(file);
-    rewind(file);
-    char shader_source[size];
-    fread(shader_source, sizeof(char), size - 1, file);
-    shader_source[size - 1] = '\0';
-    fclose(file);
+u32 shader_create_program(const char* vertex_shader_source, const char* fragment_shader_source) {
+  u32 v_shader = glCreateShader(GL_VERTEX_SHADER);
+  u32 f_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(v_shader, 1, &vertex_shader_source, NULL);
+  glShaderSource(f_shader, 1, &fragment_shader_source, NULL);
+  glCompileShader(v_shader);
+  glCompileShader(f_shader);
 
-    u32 shader = glCreateShader(type);
-    glShaderSource(shader, 1, (const char * const *) &(const char *) { shader_source }, NULL);
-    glCompileShader(shader);
-    return shader;
-  }
-
-  u32 vertex_shader = create_shader(GL_VERTEX_SHADER, vertex_path, "vertex");
-  u32 fragment_shader = create_shader(GL_FRAGMENT_SHADER, fragment_path, "fragment");
   u32 shader_program = glCreateProgram();
-  glAttachShader(shader_program, vertex_shader);
-  glAttachShader(shader_program, fragment_shader);
+  glAttachShader(shader_program, v_shader);
+  glAttachShader(shader_program, f_shader);
   glLinkProgram(shader_program);
-  glDeleteShader(vertex_shader);
-  glDeleteShader(fragment_shader);
+  glDeleteShader(v_shader);
+  glDeleteShader(f_shader);
 
   glUseProgram(shader_program);
   return shader_program;
