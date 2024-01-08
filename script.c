@@ -21,6 +21,11 @@ typedef int32_t  i32;
 typedef float    f32;
 typedef double   f64;
 
+// --- Shader
+
+const char* vertex_shader = "# version 330 core\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in float aLig;\nuniform mat4 MODEL;\nuniform mat4 VIEW;\nuniform mat4 PROJ;\nout float _lig;\nvoid main() {\n  _lig = aLig;\n  gl_Position = PROJ * VIEW * MODEL * vec4(aPos, 1);\n}";
+const char* fragment_shader = "# version 330 core\nuniform vec3 COLOR;\nin float _lig;\nout vec4 color;\nvoid main() {\n  float lig = 0.8 + _lig * 0.2;\n  color = vec4(COLOR * lig, 1);\n}";
+
 // --- Type
 
 enum { UP, RIGHT, DOWN, LEFT, FRONT, BACK } Direction;
@@ -73,7 +78,7 @@ i8 main() {
   glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), (void*) (sizeof(f32) * 3));
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
-  u32 shader_program = shader_create_program("shd/vertex.glsl", "shd/fragment.glsl");
+  u32 shader_program = shader_create_program(vertex_shader, fragment_shader);
 
   mat4 model;
   generate_proj_mat(cam, proj);
