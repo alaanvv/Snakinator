@@ -173,6 +173,11 @@ void cursor_callback(GLFWwindow* window, f64 x, f64 y) {
   generate_view_mat(cam, view);
 }
 
+u8 apple_free() {
+  for (u8 i = 0; i < snake.size; i++)
+    if (CMP_VEC3(snake.body[i], apple)) return 0;
+}
+
 u8 game_loop() {
   if (game_end) {
     if (snake.size == 0 && tick_wait == 2) return 0;
@@ -213,11 +218,6 @@ u8 game_loop() {
 
   // Check for apple collision
   if (CMP_VEC3(snake.body[snake.size], apple)) {
-    u8 apple_free() {
-      for (u8 i = 0; i < snake.size; i++)
-        if (CMP_VEC3(snake.body[i], apple)) return 0;
-    }
-
     do {
       apple[0] = RAND(0, TILES);
       apple[1] = RAND(0, 2);
