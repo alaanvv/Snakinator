@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(Snakinator LANGUAGES C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(GLFW_BUILD_DOCS OFF)
 add_subdirectory(inc/glfw)
 add_subdirectory(inc/glad)
 add_subdirectory(inc/cglm)

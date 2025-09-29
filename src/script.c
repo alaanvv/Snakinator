@@ -164,14 +164,14 @@ i32 main() {
 
     // Draw Text
     if (menu) {
-      hud_draw_text(hud_shader, "snakinator", cam.width / 2.0 - canvas_text_width("snakinator", font, 1) / 2.0 + wave(2, 15, 0.00), cam.height / 2.0 - font.size / 2.0 + wave(1, 12, 0.00), font, (vec3) PASTEL_GREEN);
-      hud_draw_text(hud_shader, "snakinator", cam.width / 2.0 - canvas_text_width("snakinator", font, 1) / 2.0 + wave(2, 15, 5.00), cam.height / 2.0 - font.size / 2.0 + wave(1, 12, 5.00), font, (vec3) DEEP_GREEN);
+      hud_draw_text(hud_shader, "snakinator", cam.width / 2.0 - canvas_text_width("snakinator", font, 1) / 2.0 + wave(8, 15, 0.00), cam.height / 2.0 - font.size / 2.0 + wave(9, 12, 0.00), font, (vec3) PASTEL_GREEN);
+      hud_draw_text(hud_shader, "snakinator", cam.width / 2.0 - canvas_text_width("snakinator", font, 1) / 2.0 + wave(8, 15, 0.06), cam.height / 2.0 - font.size / 2.0 + wave(9, 12, 0.06), font, (vec3) DEEP_GREEN);
     }
     else {
       char buffer[16];
       sprintf(buffer, "%d", snake.size);
       hud_draw_text(hud_shader, buffer, 20 + wave(8, 6, 0.00), 20 + wave(9, 4, 0.00), font, (vec3) DEEP_PURPLE);
-      hud_draw_text(hud_shader, buffer, 20 + wave(8, 6, 0.04), 20 + wave(9, 4, 0.00), font, (vec3) DEEP_PURPLE);
+      hud_draw_text(hud_shader, buffer, 20 + wave(8, 6, 0.04), 20 + wave(9, 4, 0.04), font, (vec3) DEEP_PURPLE);
     }
 
     // Finish
